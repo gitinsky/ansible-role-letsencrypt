@@ -1,0 +1,71 @@
+---
+# tasks file for roles/letsencrypt
+- name: install requirements and update apt cache if it is too old
+  apt: name={{ item }} update_cache=yes cache_valid_time=86400
+  with_items:
+      - git
+
+- name: create required directories
+  file: dest={{ item }} state=directory
+  with_items:
+      - "{{ letsencrypt_path }}"
+      - "{{ letsencrypt_webroot }}"
+
+- name: clone letsencrypt repository
+  git: repo=https://github.com/letsencrypt/letsencrypt dest={{ letsencrypt_path }}
+
+- name: get key state
+  stat: path=/etc/letsencrypt/live/{{ item }}/privkey.pem
+  register: key_states
+  changed_when: not key_states.stat.exists
+  with_items: "{{ letsencrypt.values() }}"
+
+- name: define 
+  set_fact:
+      generate_cmds: "{%- set emails_new = [] -%}
+                      {%- for key, names in letsencrypt.iteritems() -%}
+                          {%- for keystat in key_states.results -%}
+                              {%- for name in names -%}
+                                  {%- if keystat.item == name and keystat.changed -%}
+                                      {%- if emails_new.append(key) -%}{%- endif -%}
+                                  {%- endif -%}
+                              {%- endfor -%}
+                          {%- endfor -%}
+                      {%- endfor -%}
+                      {%- for mail in emails_new| unique  -%}
+                          {{ letsencrypt_path }}/letsencrypt-auto certonly --webroot --agree-tos --redirect --duplicate --text --email {{ mail }}
+                              {%- for name in letsencrypt[mail] -%}
+                                  {{ ' ' }}-d {{ name }}
+                              {%- endfor -%}
+                          {{ ' ' }}--webroot-path {{ letsencrypt_webroot }}{{ '\n' if not loop.last else '' }}
+                      {%- endfor -%}"
+
+- name: show cert generation commands
+  debug: var=generate_cmds.split('\n')
+      
+- name: generate cert
+  shell: "{{ item }}"
+  with_items: generate_cmds.split('\n')
+  when: item|length > 0
+
+- name: put letsencrypt cron job
+  cron:
+      name: renew letsencrypt certificates
+      cron_file: letsencrypt
+      user: root
+      minute: 14
+      hour: 4
+      day: 14
+      job: "{{ letsencrypt_path }}/letsencrypt-auto certonly --webroot -w {{ letsencrypt_path }} -validation{% for names in letsencrypt.values() %}{% for name in names %} -d {{ name }}{% endfor %}{% endfor %} --renew-by-default 2>&1 | logger -t letsencrypt"
+  when: letsencrypt.values()|length > 0 and letsencrypt.values()[0]|length > 0
+
+- name: put nginx hup cron job
+  cron:
+      name: reload nginx to renew certificates
+      cron_file: letsencrypt
+      user: root
+      minute: 23
+      hour: 4
+      day: 14
+      job: service nginx reload 2>&1 | logger -t letsencrypt
+  when: letsencrypt_reload_nginx
