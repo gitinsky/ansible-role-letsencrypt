@@ -1,4 +1,4 @@
-Role Name
+letsencrypt
 =========
 
 Role is designed for [Let's encrypt](https://letsencrypt.org/) integration. It requires propper configured web server, see [dependencies](#Dependencies).
