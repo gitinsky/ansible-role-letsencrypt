@@ -1,34 +1,9 @@
 letsencrypt
 =========
 
-Role is designed for [Let's encrypt](https://letsencrypt.org/) integration. It requires propper configured web server, see [dependencies](#dependencies).
+Role is designed for [Let's encrypt](https://letsencrypt.org/) integration. It installs requested certificates and sets up automatic validation task to cron. Propper configured web server is required, see [requirements](#requirements).
 
 Requirements
-------------
-
-Any pre-requisites that may not be covered by Ansible itself or the role should be mentioned here. For instance, if the role uses the EC2 module, it may be a good idea to mention in this section that the boto package is required.
-
-Role Variables
---------------
-
-| variable name | default value | description |
-|---------------|:-------------:|-------------|
-| letsencrypt_path| /opt/letsencrypt | letsencrypt clone path |
-| letsencrypt_webroot| /var/www/letsencrypt| letsencrypt webroot |
-| letsencrypt_reload_nginx| yes | if ```true```, adds ```service nginx reload``` task to cron|
-| letsencrypt | none | dict of emails and domains, see example below |
-
-### ```letsencrypt```variable
-
-Domain names are grouped by email address to minimize API calls.
-
-```
-letsencrypt:
-    "hostmaster@example.com": ["gitlab.example.com", "www.example.com"]
-    "test@gmail.com": ["test.com", "test.net"]
-```
-
-Dependencies
 ------------
 
 For successful validation your web server should respond for both http and https request at the ```/.well-known/acme-challenge``` URL with the content of ```letsencrypt_webroot``` directory. See nginx example below.
@@ -38,6 +13,7 @@ For successful validation your web server should respond for both http and https
 ##### /etc/nginx/letsencrypt.conf
 
 ```
+# {{ ansible_managed }}
 location /.well-known/acme-challenge
 {
     root /var/www/letsencrypt;
@@ -77,6 +53,26 @@ server {
 ```
 
 In this example I replace error 404 with 500 one to set up Let's encrypt on multiple backends behind ha-proxy.
+
+Role Variables
+--------------
+
+| variable name | default value | description |
+|---------------|:-------------:|-------------|
+| letsencrypt_path| /opt/letsencrypt | letsencrypt clone path |
+| letsencrypt_webroot| /var/www/letsencrypt| letsencrypt webroot |
+| letsencrypt_reload_nginx| yes | if ```true```, adds ```service nginx reload``` task to cron|
+| letsencrypt | none | dict of emails and domains, see example below |
+
+### ```letsencrypt```variable
+
+Domain names are grouped by email address to minimize API calls.
+
+```
+letsencrypt:
+    "hostmaster@example.com": ["gitlab.example.com", "www.example.com"]
+    "test@gmail.com": ["test.com", "test.net"]
+```
 
 Example Playbook
 ----------------
