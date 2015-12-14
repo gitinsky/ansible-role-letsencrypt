@@ -95,6 +95,11 @@ License
 
 BSD
 
+Known issues
+------------
+
+Multiple domains renew seems to be broken. More test are required to check if they could be updated with a single command.
+
 TODO
 -----
 
