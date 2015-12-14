@@ -56,7 +56,7 @@
       minute: 14
       hour: 4
       day: 14
-      job: "{{ letsencrypt_path }}/letsencrypt-auto certonly --webroot -w {{ letsencrypt_path }} -validation{% for names in letsencrypt.values() %}{% for name in names %} -d {{ name }}{% endfor %}{% endfor %} --renew-by-default 2>&1 | logger -t letsencrypt"
+      job: "{{ letsencrypt_path }}/letsencrypt-auto certonly --webroot --webroot-path {{ letsencrypt_webroot }} {% for names in letsencrypt.values() %}{% for name in names %} -d {{ name }}{% endfor %}{% endfor %} --renew-by-default 2>&1 | logger -t letsencrypt"
   when: letsencrypt.values()|length > 0 and letsencrypt.values()[0]|length > 0
 
 - name: put nginx hup cron job
