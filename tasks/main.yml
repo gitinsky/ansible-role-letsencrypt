@@ -20,6 +20,18 @@
   changed_when: not key_states.stat.exists
   with_items: "{{ letsencrypt.values() }}"
 
+- name: check if server listens on port 80
+  shell: netstat -tunlp | grep ":80 "
+  failed_when: false
+  changed_when: check_80.rc == 1
+  register: check_80
+  
+- name: check if server listens on port 443
+  shell: netstat -tunlp | grep ":443 "
+  failed_when: false
+  changed_when: check_443.rc == 1
+  register: check_443
+  
 - name: define 
   set_fact:
       generate_cmds: "{%- set emails_new = [] -%}
@@ -33,11 +45,17 @@
                           {%- endfor -%}
                       {%- endfor -%}
                       {%- for mail in emails_new| unique  -%}
-                          {{ letsencrypt_path }}/letsencrypt-auto certonly --webroot --agree-tos --redirect --duplicate --text --email {{ mail }}
+                          {{ letsencrypt_path }}/letsencrypt-auto certonly --agree-tos --redirect --duplicate --text --email {{ mail }}
                               {%- for name in letsencrypt[mail] -%}
                                   {{ ' ' }}-d {{ name }}
                               {%- endfor -%}
-                          {{ ' ' }}--webroot-path {{ letsencrypt_webroot }}{{ '\n' if not loop.last else '' }}
+                              {{ ' ' }}
+                              {%- if check_443.changed  and check_80.changed -%}
+                                --standalone
+                              {%- else -%}
+                          --webroot --webroot-path {{ letsencrypt_webroot }}
+                              {%- endif -%}
+                              {{ '\n' if not loop.last else '' }}
                       {%- endfor -%}"
 
 - name: show cert generation commands

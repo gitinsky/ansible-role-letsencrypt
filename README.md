@@ -103,6 +103,5 @@ Multiple domains renew seems to be broken. More test are required to check if th
 TODO
 -----
 
-- Run in standalone mode if now web server is configured
 - Implement individual cron times for different servers
 - Implement one by one generation if run on a group of hosts
