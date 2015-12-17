@@ -4,6 +4,7 @@
   apt: name={{ item }} update_cache=yes cache_valid_time=86400
   with_items:
       - git
+      - openssl
 
 - name: create required directories
   file: dest={{ item }} state=directory
@@ -14,52 +15,58 @@
 - name: clone letsencrypt repository
   git: repo=https://github.com/letsencrypt/letsencrypt dest={{ letsencrypt_path }}
 
-- name: get key state
-  stat: path=/etc/letsencrypt/live/{{ item }}/privkey.pem
-  register: key_states
-  changed_when: not key_states.stat.exists
-  with_items: "{{ letsencrypt.values() }}"
+# When certificate is created for multiple (SAN) domains last domain name is used as path for key and certs. Let's check the list of DNS names for the cert by the last domain (if any)
 
-- name: check if server listens on port 80
-  shell: netstat -tunlp | grep ":80 "
+- name: get list of domains in certificate if any
+  shell: openssl x509 -text < /etc/letsencrypt/live/{{ item.domains[item.domains|length - 1] }}/cert.pem|grep DNS|tr -d ' '|tr ',' '\n'|cut -d ':' -f 2
   failed_when: false
-  changed_when: check_80.rc == 1
-  register: check_80
-  
+  changed_when: false
+  always_run: yes
+  with_items: letsencrypt
+  register: dns_info
+  tags: dontgen
+
 - name: check if server listens on port 443
   shell: netstat -tunlp | grep ":443 "
   failed_when: false
   changed_when: check_443.rc == 1
   register: check_443
+  always_run: yes
+  tags: dontgen
   
-- name: define 
+
+# Create generation commands if domain list in existing certificate is incomplete (it is empty if certificate doesn't exist)
+
+- name: define generation commands
   set_fact:
-      generate_cmds: "{%- set emails_new = [] -%}
-                      {%- for key, names in letsencrypt.iteritems() -%}
-                          {%- for keystat in key_states.results -%}
-                              {%- for name in names -%}
-                                  {%- if keystat.item == name and keystat.changed -%}
-                                      {%- if emails_new.append(key) -%}{%- endif -%}
-                                  {%- endif -%}
-                              {%- endfor -%}
+      generate_cmds: "{%- set generation_indexes = [] -%}
+                      {%- for san_dict in letsencrypt -%}
+                          {%- set i = loop.index0 -%}
+                          {%- for domain in san_dict.domains -%}
+                              {%- if domain not in dns_info.results[i].stdout_lines -%}
+                                  {%- if i not in generation_indexes -%}{%- if generation_indexes.append(i) -%}{%- endif -%}{%- endif -%}
+                              {%- endif -%}
                           {%- endfor -%}
                       {%- endfor -%}
-                      {%- for mail in emails_new| unique  -%}
-                          {{ letsencrypt_path }}/letsencrypt-auto certonly --agree-tos --redirect --duplicate --text --email {{ mail }}
-                              {%- for name in letsencrypt[mail] -%}
-                                  {{ ' ' }}-d {{ name }}
-                              {%- endfor -%}
-                              {{ ' ' }}
-                              {%- if check_443.changed  and check_80.changed -%}
-                                --standalone
-                              {%- else -%}
-                          --webroot --webroot-path {{ letsencrypt_webroot }}
-                              {%- endif -%}
-                              {{ '\n' if not loop.last else '' }}
+                      {%- for i in generation_indexes -%}
+                          {{ letsencrypt_path }}/letsencrypt-auto certonly --agree-tos --redirect --duplicate --text --email {{ letsencrypt[i].email }}
+                          {%- for domain in letsencrypt[i].domains -%}
+                              {{ ' ' }}-d {{ domain }}
+                          {%- endfor -%}
+                          {{ ' ' }}
+                          {%- if check_443.changed  and check_80.changed -%}
+                              --standalone
+                          {%- else -%}
+                              --webroot --webroot-path {{ letsencrypt_webroot }}
+                          {%- endif -%}
+                          {{ '\n' if not loop.last else '' }}
                       {%- endfor -%}"
+
+  tags: dontgen
 
 - name: show cert generation commands
   debug: var=generate_cmds.split('\n')
+  tags: dontgen
       
 - name: generate cert
   shell: "{{ item }}"
@@ -67,23 +74,5 @@
   when: item|length > 0
 
 - name: put letsencrypt cron job
-  cron:
-      name: renew letsencrypt certificates
-      cron_file: letsencrypt
-      user: root
-      minute: 14
-      hour: 4
-      day: 14
-      job: "/root/.local/share/letsencrypt/bin/letsencrypt certonly --webroot --webroot-path {{ letsencrypt_webroot }} {% for names in letsencrypt.values() %}{% for name in names %} -d {{ name }}{% endfor %}{% endfor %} --renew-by-default 2>&1 | logger -t letsencrypt"
-  when: letsencrypt.values()|length > 0 and letsencrypt.values()[0]|length > 0
-
-- name: put nginx hup cron job
-  cron:
-      name: reload nginx to renew certificates
-      cron_file: letsencrypt
-      user: root
-      minute: 23
-      hour: 4
-      day: 14
-      job: service nginx reload 2>&1 | logger -t letsencrypt
-  when: letsencrypt_reload_nginx
+  template: src=cron.d/letsencrypt.j2 dest=/etc/cron.d/letsencrypt
+  tags: dontgen

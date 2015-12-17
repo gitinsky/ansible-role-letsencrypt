@@ -3,10 +3,16 @@ letsencrypt
 
 Role is designed for [Let's encrypt](https://letsencrypt.org/) integration. It installs requested certificates and sets up automatic validation task to cron. Propper configured web server is required, see [requirements](#requirements).
 
+There's a ```dontgen``` tag that dosn't generate certificates but just shows you the generation commands and puts cron tasks.
+
 Requirements
 ------------
 
-For successful validation your web server should respond for both http and https request at the ```/.well-known/acme-challenge``` URL with the content of ```letsencrypt_webroot``` directory. See nginx example below.
+For successful validation your web server should respond for both http and https request at the ```/.well-known/acme-challenge``` URL with the content of ```letsencrypt_webroot``` directory. See nginx example below. Built in web server will be used for the first time generation if no services listen to 80 and 443 ports.
+
+Do _not_ run multiple letsencrypt roles on the same host as cron tasks will be overwritten.
+
+Certificate update tasks are placed to cron with 5 minutes interval starting from 4:04 in the 14th day of each month.
 
 ### nginx_example
 
@@ -62,17 +68,26 @@ Role Variables
 | letsencrypt_path| /opt/letsencrypt | letsencrypt clone path |
 | letsencrypt_webroot| /var/www/letsencrypt| letsencrypt webroot |
 | letsencrypt_reload_nginx| yes | if ```true```, adds ```service nginx reload``` task to cron|
-| letsencrypt | none | dict of emails and domains, see example below |
+| letsencrypt | none | list of dictionaries, see example below |
 
 ### ```letsencrypt```variable
 
-Domain names are grouped by email address to minimize API calls.
+Variable is a list of dictionaries, each item should produce a key and a cron task.
+```email``` is an emails address assigned to the list of domains in ```domains``` array.
+```domains``` is a list of domains included in a key. Last item in this list will be used in a path to certificates.
 
 ```
 letsencrypt:
-    "hostmaster@example.com": ["gitlab.example.com", "www.example.com"]
-    "test@gmail.com": ["test.com", "test.net"]
+    - { email: "hostmaster@example.com", domains: ["example.com", "www.example.com"] }
+    - { email: "hostmaster@example.com", domains: ["gitlab.example.com"] }
+    - { email: "test@gmail.com",         domains: ["test.com", "test.net"] }
 ```
+
+Here you are going to get the following certificate paths:
+
+- /etc/letsencrypt/live/www.example.com/fullchain.pem
+- /etc/letsencrypt/live/gitlab.example.com/fullchain.pem
+- /etc/letsencrypt/live/test.net/fullchain.pem
 
 Example Playbook
 ----------------
@@ -81,9 +96,10 @@ Example Playbook
 - hosts: servers
   sudo: yes
   vars:
-    letsencrypt:
-      "hostmaster@example.com": ["gitlab.example.com", "www.example.com"]
-      "test@gmail.com": ["test.com", "test.net"]
+      letsencrypt:
+          - { email: "hostmaster@example.com", domains: ["example.com", "www.example.com"] }
+          - { email: "hostmaster@example.com", domains: ["gitlab.example.com"] }
+          - { email: "test@gmail.com",         domains: ["test.com", "test.net"] }
 
   roles:
       - { role: letsencrypt, tags: cert }
