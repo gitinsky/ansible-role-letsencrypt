@@ -72,6 +72,11 @@
   shell: "{{ item }}"
   with_items: generate_cmds.split('\n')
   when: item|length > 0
+  register: gen_result
+  notify: reload nginx
+
+- name: show generation results
+  debug: var=gen_result.stdout_lines
 
 - name: put letsencrypt cron job
   template: src=cron.d/letsencrypt.j2 dest=/etc/cron.d/letsencrypt
