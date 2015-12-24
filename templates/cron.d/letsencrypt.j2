@@ -12,7 +12,7 @@
 # * * * * * command to be executed
 {% for item in letsencrypt %}
 
-# Renew /etc/letsencrypt/live/{{ item.domains|last }}/ certificate, SAN domains:{% for name in item.domains %} {{ name }}{% endfor %}
+# Renew /etc/letsencrypt/live/{{ item.domains|first }}/ certificate, SAN domains:{% for name in item.domains %} {{ name }}{% endfor %}
 
 {{ time.m % 60 }} {{ time.h + (time.m - time.m % 60) // 60  }} 14 * * root /root/.local/share/letsencrypt/bin/letsencrypt certonly --webroot --webroot-path /var/www/letsencrypt {%- for name in item.domains %} -d {{ name }}{% endfor %} --renew-by-default 2>&1 | logger -t letsencrypt
 {% if time.update({'m': time.m + 5}) %}{% endif %}

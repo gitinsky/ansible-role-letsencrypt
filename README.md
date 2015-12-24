@@ -74,7 +74,7 @@ Role Variables
 
 Variable is a list of dictionaries, each item should produce a key and a cron task.
 ```email``` is an emails address assigned to the list of domains in ```domains``` array.
-```domains``` is a list of domains included in a key. Last item in this list will be used in a path to certificates.
+```domains``` is a list of domains included in a key. The first item in this list will be used in a path to certificates.
 
 ```
 letsencrypt:
@@ -114,7 +114,7 @@ BSD
 Known issues
 ------------
 
-Multiple domains renew seems to be broken. More test are required to check if they could be updated with a single command.
+When domain list for multiple domains (SAN) changed "let's encrypt" creates new certificate paths.
 
 TODO
 -----
