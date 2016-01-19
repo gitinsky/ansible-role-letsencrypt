@@ -26,6 +26,14 @@
   register: dns_info
   tags: dontgen
 
+- name: check if server listens on port 80
+  shell: netstat -tunlp | grep ":80 "
+  failed_when: false
+  changed_when: check_80.rc == 1
+  register: check_80
+  always_run: yes
+  tags: dontgen
+
 - name: check if server listens on port 443
   shell: netstat -tunlp | grep ":443 "
   failed_when: false
