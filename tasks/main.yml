@@ -13,7 +13,7 @@
       - "{{ letsencrypt_webroot }}"
 
 - name: clone letsencrypt repository
-  git: repo=https://github.com/letsencrypt/letsencrypt dest={{ letsencrypt_path }}
+  git: repo=https://github.com/letsencrypt/letsencrypt dest={{ letsencrypt_path }} force=yes
 
 # When certificate is created for multiple (SAN) domains the first domain name is used as path for key and certs. Let's check the list of DNS names for the cert by the first domain (if any)
 
