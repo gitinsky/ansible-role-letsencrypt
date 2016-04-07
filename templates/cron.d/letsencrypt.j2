@@ -4,18 +4,22 @@
 
 # +------------- min (0 - 59)
 # | +----------- hour (0 - 23)
-# | | +--------- day of        month (1 - 31)
+# | | +--------- day of month (1 - 31)
 # | | | +------- month (1 - 12)
 # | | | | +----- day of week (0 - 6) (Sunday=0)
 # | | | | |
 # - - - - -
 # * * * * * command to be executed
 {% for item in letsencrypt %}
+{% for host in (groups[letsencrypt_group] if letsencrypt_group else [inventory_hostname]) %}
+{% if host == inventory_hostname %}
 
 # Renew /etc/letsencrypt/live/{{ item.domains|first }}/ certificate, SAN domains:{% for name in item.domains %} {{ name }}{% endfor %}
 
 {{ time.m % 60 }} {{ time.h + (time.m - time.m % 60) // 60  }} 14 * * root /root/.local/share/letsencrypt/bin/letsencrypt certonly --webroot --webroot-path /var/www/letsencrypt {%- for name in item.domains %} -d {{ name }}{% endfor %} --renew-by-default 2>&1 | logger -t letsencrypt
+{% endif %}
 {% if time.update({'m': time.m + 5}) %}{% endif %}
+{% endfor %}
 {% endfor %}
 {% if letsencrypt_reload_nginx %}
 

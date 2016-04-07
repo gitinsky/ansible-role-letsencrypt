@@ -33,6 +33,8 @@ location @500 {
 
 ##### /etc/nginx/sites-available/mysite.conf
 
+###### behind ha-proxy
+
 ```
 # {{ ansible_managed }}
 server {
@@ -58,7 +60,54 @@ server {
 }
 ```
 
-In this example I replace error 404 with 500 one to set up Let's encrypt on multiple backends behind ha-proxy.
+###### standalone on multiple hosts
+
+```
+upstream letsencrypt {
+    server front01.int:8080;
+    server front02.int:8080;
+}
+
+server {
+    listen 80;
+    server_name -;
+
+        location /.well-known/acme-challenge {
+            proxy_pass http://letsencrypt;
+            proxy_next_upstream     error timeout invalid_header http_500;
+            proxy_connect_timeout   2;
+        }
+
+        location / {
+        return 301 https://$host$request_uri;
+        }
+}
+server {
+        listen 443 ssl;
+        server_name -;
+
+        ssl_certificate /etc/letsencrypt/live/{{ ansible_fdqn }}/fullchain.pem;
+        ssl_certificate_key /etc/letsencrypt/live/{{ ansible_fdqn }}/privkey.pem;
+
+
+        location /.well-known/acme-challenge {
+            proxy_pass http://letsencrypt;
+            proxy_next_upstream     error timeout invalid_header http_500;
+            proxy_connect_timeout   2;
+        }
+
+        location / {
+            root /var/www/html;
+        }
+}
+
+server {
+    listen 8080;
+    include letsencrypt.conf;
+}
+```
+
+In this example I replace error 404 with 500 one to set up Let's encrypt on multiple backends behind ha-proxy or on multiple frontends with standalone nginx.
 
 Role Variables
 --------------
@@ -67,8 +116,9 @@ Role Variables
 |---------------|:-------------:|-------------|
 | letsencrypt_path| /opt/letsencrypt | letsencrypt clone path |
 | letsencrypt_webroot| /var/www/letsencrypt| letsencrypt webroot |
-| letsencrypt_reload_nginx| yes | if ```true```, adds ```service nginx reload``` task to cron|
+| letsencrypt_reload_nginx| True | if ```true```, adds ```service nginx reload``` task to cron|
 | letsencrypt | none | list of dictionaries, see example below |
+|letsencrypt_group|False|name of group of hosts with identical certificates. Will be used to calculate time for cron tasks to avoid simultaneous renewal.
 
 ### ```letsencrypt```variable
 

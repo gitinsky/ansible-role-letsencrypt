@@ -22,7 +22,7 @@
   failed_when: false
   changed_when: false
   always_run: yes
-  with_items: letsencrypt
+  with_items: "{{ letsencrypt }}"
   register: dns_info
   tags: dontgen
 
@@ -75,17 +75,21 @@
 - name: show cert generation commands
   debug: var=generate_cmds.split('\n')
   tags: dontgen
-      
+
 - name: generate cert
-  shell: "{{ item }}"
-  with_items: generate_cmds.split('\n')
-  when: item|length > 0
+  shell: "{{ item.0 }}"
+  when: "{{ item.0|length > 0 and item.1 == inventory_hostname }}"
   register: gen_result
   notify: reload nginx
-
+  with_nested:
+      - "{{ generate_cmds.split('\n') }}"
+      - "{{ play_hosts if letsencrypt_group else [inventory_hostname] }}"
+  
 - name: show generation results
-  debug: var=gen_result.stdout_lines
+  debug: var={{ gen_result.results|map(attribute='stdout_lines')|list }}
 
 - name: put letsencrypt cron job
   template: src=cron.d/letsencrypt.j2 dest=/etc/cron.d/letsencrypt
-  tags: dontgen
+  tags: 
+      - dontgen
+      - cron
