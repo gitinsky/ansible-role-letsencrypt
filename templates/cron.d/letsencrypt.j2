@@ -10,8 +10,9 @@
 # | | | | |
 # - - - - -
 # * * * * * command to be executed
-{% for item in letsencrypt %}
 {% for host in (groups[letsencrypt_group] if letsencrypt_group else [inventory_hostname]) %}
+{% if hostvars[host].letsencrypt is defined %}
+{% for item in hostvars[host].letsencrypt %}
 {% if host == inventory_hostname %}
 
 # Renew /etc/letsencrypt/live/{{ item.domains|first }}/ certificate, SAN domains:{% for name in item.domains %} {{ name }}{% endfor %}
@@ -20,6 +21,7 @@
 {% endif %}
 {% if time.update({'m': time.m + 5}) %}{% endif %}
 {% endfor %}
+{% endif %}
 {% endfor %}
 {% if letsencrypt_reload_nginx %}
 

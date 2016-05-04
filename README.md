@@ -118,7 +118,7 @@ Role Variables
 | letsencrypt_webroot| /var/www/letsencrypt| letsencrypt webroot |
 | letsencrypt_reload_nginx| True | if ```true```, adds ```service nginx reload``` task to cron|
 | letsencrypt | none | list of dictionaries, see example below |
-|letsencrypt_group|False|name of group of hosts with identical certificates. Will be used to calculate time for cron tasks to avoid simultaneous renewal.
+|letsencrypt_group|False|name of group of hosts with identical or intersectional list of certificates. Will be used to calculate time for cron tasks to avoid simultaneous renewal.
 
 ### ```letsencrypt```variable
 
@@ -138,6 +138,10 @@ Here you are going to get the following certificate paths:
 - /etc/letsencrypt/live/www.example.com/fullchain.pem
 - /etc/letsencrypt/live/gitlab.example.com/fullchain.pem
 - /etc/letsencrypt/live/test.net/fullchain.pem
+
+### ```letsencrypt_group```
+
+Let's say you have 2 domain: ```test1.example.org``` and ```test2.example.org```. ```test1.example.org``` is on ```host1``` and ```host2```, ```test2.example.org``` is on ```host2``` and ```host3```. Set ```letsencrypt``` in host_vars for aech host, note that ```host2``` should have two items in the ```letsencrypt``` list. Place all three hosts to some group and set ```letsencrypt_group``` to the name of this group for this group of hosts. All your certificate updates should be fired in different time now.
 
 Example Playbook
 ----------------
