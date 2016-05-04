@@ -57,7 +57,7 @@
                           {%- endfor -%}
                       {%- endfor -%}
                       {%- for i in generation_indexes -%}
-                          {{ letsencrypt_path }}/letsencrypt-auto certonly --agree-tos --redirect --duplicate --text --email {{ letsencrypt[i].email }}
+                          {{ letsencrypt_path }}/letsencrypt-auto certonly --agree-tos --redirect --expand --text --email {{ letsencrypt[i].email }}
                           {%- for domain in letsencrypt[i].domains -%}
                               {{ ' ' }}-d {{ domain }}
                           {%- endfor -%}
