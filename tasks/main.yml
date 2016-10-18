@@ -84,12 +84,19 @@
   with_nested:
       - "{{ generate_cmds.split('\n') }}"
       - "{{ play_hosts if letsencrypt_group else [inventory_hostname] }}"
-  
-- name: show generation results
-  debug: var={{ gen_result.results|map(attribute='stdout_lines')|list }}
 
-- name: put letsencrypt cron job
-  template: src=cron.d/letsencrypt.j2 dest=/etc/cron.d/letsencrypt
-  tags: 
+- block:
+  - name: show generation results
+    debug: var={{ gen_result.results|map(attribute='stdout_lines')|list }}
+
+  rescue:
+  - name: show generation results
+    debug: var=gen_result.results
+
+  always:
+
+  - name: put letsencrypt cron job
+    template: src=cron.d/letsencrypt.j2 dest=/etc/cron.d/letsencrypt
+    tags: 
       - dontgen
       - cron
