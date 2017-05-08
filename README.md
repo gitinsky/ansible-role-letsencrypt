@@ -163,7 +163,7 @@ Example Playbook
 License
 -------
 
-BSD
+MIT
 
 Known issues
 ------------
