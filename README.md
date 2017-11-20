@@ -148,7 +148,7 @@ Example Playbook
 
 ```
 - hosts: servers
-  sudo: yes
+  become: yes
   vars:
       letsencrypt:
           - { email: "hostmaster@example.com", domains: ["example.com", "www.example.com"] }
