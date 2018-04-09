@@ -26,5 +26,5 @@
 {% if letsencrypt_reload_nginx %}
 
 # reload nginx
-{{ time.m % 60 }} {{ time.h + (time.m - time.m % 60) // 60  }} 14 * * root service nginx reload 2>&1 | logger -t letsencrypt
+{{ time.m % 60 }} {{ time.h + (time.m - time.m % 60) // 60  }} * * * root service nginx reload 2>&1 | logger -t letsencrypt
 {% endif %}
