@@ -18,7 +18,7 @@
 # When certificate is created for multiple (SAN) domains the first domain name is used as path for key and certs. Let's check the list of DNS names for the cert by the first domain (if any)
 
 - name: get list of domains in certificate if any
-  shell: openssl x509 -text < /etc/letsencrypt/live/{{ item.domains[0] }}/cert.pem|grep DNS|tr -d ' '|tr ',' '\n'|cut -d ':' -f 2
+  shell: openssl x509 -text < {{ letsencrypt_path }}/live/{{ item.domains[0] }}/cert.pem|grep DNS|tr -d ' '|tr ',' '\n'|cut -d ':' -f 2
   failed_when: false
   changed_when: false
   always_run: yes
