@@ -21,7 +21,7 @@
   shell: openssl x509 -text < /etc/letsencrypt/live/{{ item.domains[0] }}/cert.pem|grep DNS|tr -d ' '|tr ',' '\n'|cut -d ':' -f 2
   failed_when: false
   changed_when: false
-  always_run: yes
+  check_mode: no
   with_items: "{{ letsencrypt }}"
   register: dns_info
   tags: dontgen
@@ -31,7 +31,7 @@
   failed_when: false
   changed_when: check_80.rc == 1
   register: check_80
-  always_run: yes
+  check_mode: no
   tags: dontgen
 
 - name: check if server listens on port 443
@@ -39,7 +39,7 @@
   failed_when: false
   changed_when: check_443.rc == 1
   register: check_443
-  always_run: yes
+  check_mode: no
   tags: dontgen
   
 
