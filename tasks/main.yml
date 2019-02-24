@@ -13,21 +13,23 @@
       - "{{ letsencrypt_webroot }}"
 
 - name: clone letsencrypt repository
-  git: repo=https://github.com/certbot/certbot dest={{ letsencrypt_path }} force=yes
+  git: repo=https://github.com/certbot/certbot dest={{ letsencrypt_path }} version=master force=yes
 
 # When certificate is created for multiple (SAN) domains the first domain name is used as path for key and certs. Let's check the list of DNS names for the cert by the first domain (if any)
 
 - name: get list of domains in certificate if any
-  shell: openssl x509 -text < {{ letsencrypt_path }}/live/{{ item.domains[0] }}/cert.pem|grep DNS|tr -d ' '|tr ',' '\n'|cut -d ':' -f 2
+  shell: set -o pipefail && openssl x509 -text < {{ letsencrypt_path }}/live/{{ item.domains[0] }}/cert.pem|grep DNS|tr -d ' '|tr ',' '\n'|cut -d ':' -f 2
   failed_when: false
   changed_when: false
+  executable: /bin/bash
   check_mode: no
   with_items: "{{ letsencrypt }}"
   register: dns_info
   tags: dontgen
 
 - name: check if server listens on port 80
-  shell: netstat -tunlp | grep ":80 "
+  shell: set -o pipefail && netstat -tunlp | grep ":80 "
+  executable: /bin/bash
   failed_when: false
   changed_when: check_80.rc == 1
   register: check_80
@@ -35,7 +37,8 @@
   tags: dontgen
 
 - name: check if server listens on port 443
-  shell: netstat -tunlp | grep ":443 "
+  shell: set -o pipefail && netstat -tunlp | grep ":443 "
+  executable: /bin/bash
   failed_when: false
   changed_when: check_443.rc == 1
   register: check_443
@@ -79,7 +82,7 @@
 - name: generate cert
   shell: "{{ item.0 }}"
   when: "{{ item.0|length > 0 and item.1 == inventory_hostname }}"
-  register: gen_result
+  register: gen_result # noqa 305
   notify: reload nginx
   with_nested:
       - "{{ generate_cmds.split('\n') }}"
