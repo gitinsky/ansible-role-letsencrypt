@@ -50,28 +50,29 @@
 
 - name: define generation commands
   set_fact:
-      generate_cmds: "{%- set generation_indexes = [] -%}
-                      {%- for san_dict in letsencrypt -%}
-                          {%- set i = loop.index0 -%}
-                          {%- for domain in san_dict.domains -%}
-                              {%- if domain not in dns_info.results[i].stdout_lines -%}
-                                  {%- if i not in generation_indexes -%}{%- if generation_indexes.append(i) -%}{%- endif -%}{%- endif -%}
-                              {%- endif -%}
-                          {%- endfor -%}
-                      {%- endfor -%}
-                      {%- for i in generation_indexes -%}
-                          {{ letsencrypt_path }}/letsencrypt-auto certonly --noninteractive --agree-tos --redirect --expand --text --email {{ letsencrypt[i].email }}
-                          {%- for domain in letsencrypt[i].domains -%}
-                              {{ ' ' }}-d {{ domain }}
-                          {%- endfor -%}
-                          {{ ' ' }}
-                          {%- if check_443.changed  and check_80.changed -%}
-                              --standalone
-                          {%- else -%}
-                              --webroot --webroot-path {{ letsencrypt_webroot }}
-                          {%- endif -%}
-                          {{ '\n' if not loop.last else '' }}
-                      {%- endfor -%}"
+      generate_cmds:
+               "{%- set generation_indexes = [] -%}
+                {%- for san_dict in letsencrypt -%}
+                    {%- set i = loop.index0 -%}
+                    {%- for domain in san_dict.domains -%}
+                        {%- if domain not in dns_info.results[i].stdout_lines -%}
+                            {%- if i not in generation_indexes -%}{%- if generation_indexes.append(i) -%}{%- endif -%}{%- endif -%}
+                        {%- endif -%}
+                    {%- endfor -%}
+                {%- endfor -%}
+                {%- for i in generation_indexes -%}
+                    {{ letsencrypt_path }}/letsencrypt-auto certonly --noninteractive --agree-tos --redirect --expand --text --email {{ letsencrypt[i].email }}
+                    {%- for domain in letsencrypt[i].domains -%}
+                        {{ ' ' }}-d {{ domain }}
+                    {%- endfor -%}
+                    {{ ' ' }}
+                    {%- if check_443.changed  and check_80.changed -%}
+                        --standalone
+                    {%- else -%}
+                        --webroot --webroot-path {{ letsencrypt_webroot }}
+                    {%- endif -%}
+                    {{ '\n' if not loop.last else '' }}
+                {%- endfor -%}"
 
   tags: dontgen
 
@@ -81,12 +82,12 @@
 
 - name: generate cert
   shell: "{{ item.0 }}"
-  when: "{{ item.0|length > 0 and item.1 == inventory_hostname }}"
+  when: item.0|length > 0 and item.1 == inventory_hostname
   register: gen_result # noqa 305
   notify: reload nginx
-  with_nested:
-      - "{{ generate_cmds.split('\n') }}"
-      - "{{ play_hosts if letsencrypt_group else [inventory_hostname] }}"
+  with_nested: # noqa 104
+      - generate_cmds.split('\n')
+      - play_hosts if letsencrypt_group else [inventory_hostname]
 
 - block:
   - name: show generation results
