@@ -21,7 +21,8 @@
   shell: set -o pipefail && openssl x509 -text < {{ letsencrypt_path }}/live/{{ item.domains[0] }}/cert.pem|grep DNS|tr -d ' '|tr ',' '\n'|cut -d ':' -f 2
   failed_when: false
   changed_when: false
-  executable: /bin/bash
+  args:
+    executable: /bin/bash
   check_mode: no
   with_items: "{{ letsencrypt }}"
   register: dns_info
@@ -29,7 +30,8 @@
 
 - name: check if server listens on port 80
   shell: set -o pipefail && netstat -tunlp | grep ":80 "
-  executable: /bin/bash
+  args:
+    executable: /bin/bash
   failed_when: false
   changed_when: check_80.rc == 1
   register: check_80
@@ -38,7 +40,8 @@
 
 - name: check if server listens on port 443
   shell: set -o pipefail && netstat -tunlp | grep ":443 "
-  executable: /bin/bash
+  args:
+    executable: /bin/bash
   failed_when: false
   changed_when: check_443.rc == 1
   register: check_443
