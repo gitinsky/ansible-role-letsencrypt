@@ -89,8 +89,8 @@
   register: gen_result # noqa 305
   notify: reload nginx
   with_nested: # noqa 104
-      - generate_cmds.split('\n')
-      - play_hosts if letsencrypt_group else [inventory_hostname]
+      - "{{ generate_cmds.split('\n') }}"
+      - "{{ play_hosts if letsencrypt_group else [inventory_hostname] }}"
 
 - block:
   - name: show generation results
