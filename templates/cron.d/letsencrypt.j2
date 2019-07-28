@@ -11,8 +11,8 @@
 # - - - - -
 # * * * * * command to be executed
 {% for host in (groups[letsencrypt_group] if letsencrypt_group else [inventory_hostname]) %}
-{% if hostvars[host].letsencrypt is defined %}
-{% for item in hostvars[host].letsencrypt %}
+{% if hostvars[host].letsencrypt|default(letsencrypt) is defined %}
+{% for item in hostvars[host].letsencrypt|default(letsencrypt) %}
 {% if host == inventory_hostname %}
 
 # Renew /etc/letsencrypt/live/{{ item.domains|first }}/ certificate, SAN domains:{% for name in item.domains %} {{ name }}{% endfor %}
