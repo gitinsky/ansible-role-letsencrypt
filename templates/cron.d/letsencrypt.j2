@@ -17,7 +17,7 @@
 
 # Renew /etc/letsencrypt/live/{{ item.domains|first }}/ certificate, SAN domains:{% for name in item.domains %} {{ name }}{% endfor %}
 
-{{ time.m % 60 }} {{ time.h + (time.m - time.m % 60) // 60  }} * * * root /opt/letsencrypt/letsencrypt-auto certonly --webroot --webroot-path {{ letsencrypt_webroot }} {%- for name in item.domains %} -d {{ name }}{% endfor %} --keep-until-expiring 2>&1 | logger -t letsencrypt
+{{ time.m % 60 }} {{ time.h + (time.m - time.m % 60) // 60  }} * * * root /opt/letsencrypt/letsencrypt-auto certonly --webroot --webroot-path {{ letsencrypt_webroot }} {%- for name in item.domains %} -d {{ name }}{% endfor %} --keep-until-expiring {% if letsencrypt_version != 'master' %}--no-self-upgrade {% endif %}2>&1 | logger -t letsencrypt
 {% endif %}
 {% if time.update({'m': time.m + 5}) %}{% endif %}
 {% endfor %}

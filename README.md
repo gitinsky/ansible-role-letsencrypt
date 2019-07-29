@@ -170,6 +170,13 @@ Known issues
 
 When domain list for multiple domains (SAN) changed "let's encrypt" creates new certificate paths.
 
+### `letsencrypt_version`
+
+```
+      - role: letsencrypt
+        letsencrypt_version: 0.31.x
+```
+
 TODO
 -----
 

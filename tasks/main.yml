@@ -13,7 +13,7 @@
       - "{{ letsencrypt_webroot }}"
 
 - name: clone letsencrypt repository
-  git: repo=https://github.com/certbot/certbot dest={{ letsencrypt_path }} version=master force=yes
+  git: repo=https://github.com/certbot/certbot dest={{ letsencrypt_path }} version={{ letsencrypt_version }} force=yes
 
 # When certificate is created for multiple (SAN) domains the first domain name is used as path for key and certs. Let's check the list of DNS names for the cert by the first domain (if any)
 
@@ -73,6 +73,9 @@
                         --standalone
                     {%- else -%}
                         --webroot --webroot-path {{ letsencrypt_webroot }}
+                    {%- endif -%}
+                    {%- if letsencrypt_version != 'master' %}
+                         --no-self-upgrade
                     {%- endif -%}
                     {{ '\n' if not loop.last else '' }}
                 {%- endfor -%}"
