@@ -174,7 +174,7 @@ When domain list for multiple domains (SAN) changed "let's encrypt" creates new 
 
 ```
       - role: letsencrypt
-        letsencrypt_version: 0.31.x
+        letsencrypt_version: v0.31.0
 ```
 
 TODO
